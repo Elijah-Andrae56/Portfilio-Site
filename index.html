@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eli Andrae | Portfolio</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+  <div class="container">
+    <header id="top">
+      <div id="headshotWrap" class="headshot-wrap"></div>
+
+      <h1 id="name"></h1>
+      <div class="subtitle" id="headline"></div>
+
+      <div class="domains" id="domainTags"></div>
+
+      <div class="social-links" id="socialLinks"></div>
+
+      <nav class="topnav" aria-label="Primary">
+        <a href="#about">About</a>
+        <a href="#skills">Skills</a>
+        <a href="#research">Research</a>
+        <a href="#projects">Projects</a>
+        <a href="#experience">Experience</a>
+        <a href="#education">Education</a>
+        <a href="#coursework">Coursework</a>
+      </nav>
+    </header>
+
+    <section class="section" id="about">
+      <h2>Summary</h2>
+      <p class="muted" id="summaryText"></p>
+    </section>
+
+    <section class="section" id="skills">
+      <h2>Skills</h2>
+      <div class="skills-grid" id="skillsGrid"></div>
+    </section>
+
+    <section class="section" id="research">
+      <h2>Research</h2>
+      <div class="timeline" id="researchList"></div>
+    </section>
+
+    <section class="section" id="projects">
+      <h2>Projects</h2>
+
+      <div class="controls">
+        <div class="filter-container" id="filterContainer"></div>
+        <div class="searchbar">
+        <input
+          id="projectSearch"
+          type="search"
+          placeholder="Search projects (title, description, tools, tags)..."
+          autocomplete="off"
+        />
+
+        <select id="projectSort" aria-label="Sort projects">
+          <option value="relevance" selected>Relevance</option>
+          <option value="date_desc">Newest → Oldest</option>
+          <option value="date_asc">Oldest → Newest</option>
+          <option value="title_asc">Title A → Z</option>
+          <option value="title_desc">Title Z → A</option>
+        </select>
+      </div>
+
+      </div>
+
+      <div class="projects-grid" id="projectsGrid"></div>
+    </section>
+
+    <section class="section" id="experience">
+      <h2>Work Experience</h2>
+      <div class="timeline" id="experienceList"></div>
+    </section>
+
+    <section class="section" id="education">
+      <h2>Education</h2>
+      <div class="timeline" id="educationList"></div>
+    </section>
+
+    <section class="section" id="coursework">
+      <h2>Coursework</h2>
+      <div class="timeline" id="courseworkList"></div>
+    </section>
+
+    <footer id="footer"></footer>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal" role="document" aria-label="Project details">
+      <div class="modal-header">
+        <strong id="modalTitle">Project</strong>
+        <button class="modal-close" id="modalCloseBtn" type="button" aria-label="Close modal">Close</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
