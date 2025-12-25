@@ -19,21 +19,42 @@
 
       <div class="social-links" id="socialLinks"></div>
 
-      <div class="pdf-controls">
-        <label class="pdf-label" for="pdfFocus">PDF focus:</label>
-        <select id="pdfFocus" class="pdf-select" aria-label="PDF focus area">
-          <option value="all" selected>All</option>
-          <option value="ds">Data Science</option>
-          <option value="marketing">Marketing / Business</option>
-          <option value="nanofab">Nanofabrication</option>
-          <option value="cs">Computer Science</option>
-        </select>
+  <div class="pdf-controls">
+    <span class="pdf-label">PDF focus:</span>
 
-        <button id="downloadPdfBtn" class="pdf-btn" type="button">
-          Download PDF
-        </button>
+    <div class="pdf-dd" id="pdfDropdown">
+      <button id="pdfDdBtn" class="pdf-dd-btn" type="button" aria-haspopup="menu" aria-expanded="false">
+        <span id="pdfDdSummary">Data Science</span>
+        <span aria-hidden="true">▾</span>
+      </button>
+
+      <div id="pdfDdMenu" class="pdf-dd-menu hidden" role="menu" aria-label="Select PDF domains">
+        <label class="pdf-dd-item">
+          <input type="checkbox" value="ds" checked />
+          <span>Data Science</span>
+        </label>
+        <label class="pdf-dd-item">
+          <input type="checkbox" value="marketing" />
+          <span>Marketing / Business</span>
+        </label>
+        <label class="pdf-dd-item">
+          <input type="checkbox" value="nanofab" />
+          <span>Nanofabrication</span>
+        </label>
+        <label class="pdf-dd-item">
+          <input type="checkbox" value="cs" />
+          <span>Computer Science</span>
+        </label>
+
+        <div class="pdf-dd-actions">
+          <button id="pdfDdAll" class="pdf-dd-action" type="button">All</button>
+          <button id="pdfDdNone" class="pdf-dd-action" type="button">None</button>
+        </div>
       </div>
+    </div>
 
+    <button id="downloadPdfBtn" class="pdf-btn" type="button">Download PDF</button>
+  </div>
 
       <nav class="topnav" aria-label="Primary">
         <a href="#about">About</a>

@@ -328,7 +328,7 @@ image: "images/microfluidic_TRNG_2.jpg",
     {
       title: "Nanofabrication & Engineering",
       meta: "",
-      bullets: ["Nanofabrication (photolithography, thin-film processing, metrology)"],
+      bullets: ["Nanofabrication"],
     },
     {
       title: "Ethics & Analytical Reasoning",

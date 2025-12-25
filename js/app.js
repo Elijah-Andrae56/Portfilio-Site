@@ -155,6 +155,46 @@ function pickProjectsForFocus(projects, focusKey) {
   return projects.filter(p => (p.categories || []).some(c => cfg.categories.includes(c)));
 }
 
+const DOMAIN_LABELS = {
+  ds: "Data Science",
+  marketing: "Marketing / Business",
+  nanofab: "Nanofabrication",
+  cs: "Computer Science",
+};
+
+function getSelectedPdfDomains() {
+  const menu = qs("#pdfDdMenu");
+  if (!menu) return ["ds"];
+  const selected = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(x => x.value);
+  return selected.length ? selected : ["ds"]; // never allow empty selection
+}
+
+function setPdfDomains(domains) {
+  const menu = qs("#pdfDdMenu");
+  if (!menu) return;
+
+  const inputs = [...menu.querySelectorAll('input[type="checkbox"]')];
+  inputs.forEach(inp => {
+    inp.checked = domains.includes(inp.value);
+  });
+
+  updatePdfDdSummary();
+}
+
+function updatePdfDdSummary() {
+  const selected = getSelectedPdfDomains();
+  const summary = qs("#pdfDdSummary");
+  if (!summary) return;
+
+  if (selected.length === 4) {
+    summary.textContent = "All domains";
+    return;
+  }
+
+  summary.textContent = selected.map(k => DOMAIN_LABELS[k] || k).join(", ");
+}
+
+
 function buildResumeHtml(focusKey) {
   const cfg = focusConfig(focusKey);
   const person = SITE.person;
@@ -437,13 +477,6 @@ function buildResumeHtml(focusKey) {
       </div>
     </div>
   </div>
-
-<script>
-  // auto-open print dialog; user saves as PDF
-  window.addEventListener("load", () => {
-    setTimeout(() => window.print(), 150);
-  });
-</script>
 </body>
 </html>
   `;
@@ -833,12 +866,61 @@ function init() {
   state.sortMode = e.target.value;
   renderProjects();
 });
+  // PDF dropdown open/close
+  const ddBtn = qs("#pdfDdBtn");
+  const ddMenu = qs("#pdfDdMenu");
+  const ddWrap = qs("#pdfDropdown");
+
+  function openPdfMenu() {
+    ddMenu.classList.remove("hidden");
+    ddBtn.setAttribute("aria-expanded", "true");
+  }
+
+  function closePdfMenu() {
+    ddMenu.classList.add("hidden");
+    ddBtn.setAttribute("aria-expanded", "false");
+  }
+
+  ddBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const isOpen = !ddMenu.classList.contains("hidden");
+    if (isOpen) closePdfMenu();
+    else openPdfMenu();
+  });
+
+  // Close when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!ddWrap) return;
+    if (!ddWrap.contains(e.target)) closePdfMenu();
+  });
+
+  // Close on Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closePdfMenu();
+  });
+
+  // Update summary when checkboxes change + prevent "none selected"
+  ddMenu.addEventListener("change", (e) => {
+    const selected = [...ddMenu.querySelectorAll('input[type="checkbox"]:checked')];
+    if (selected.length === 0) {
+      // Keep at least one checked
+      const first = ddMenu.querySelector('input[type="checkbox"][value="ds"]') || ddMenu.querySelector('input[type="checkbox"]');
+      if (first) first.checked = true;
+    }
+    updatePdfDdSummary();
+  });
+
+  // All / None buttons
+  qs("#pdfDdAll").addEventListener("click", () => setPdfDomains(["ds", "marketing", "nanofab", "cs"]));
+  qs("#pdfDdNone").addEventListener("click", () => setPdfDomains(["ds"])); // "None" becomes a safe default
+  updatePdfDdSummary();
+
 
 qs("#downloadPdfBtn").addEventListener("click", () => {
-  const focusKey = qs("#pdfFocus")?.value || "all";
-  const html = buildResumeHtml(focusKey);
+  const domains = getSelectedPdfDomains();
+  const html = buildResumeHtml(domains);
 
-  // Create hidden iframe
+  // iframe print (your working version)
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
   iframe.style.right = "0";
@@ -849,22 +931,29 @@ qs("#downloadPdfBtn").addEventListener("click", () => {
 
   document.body.appendChild(iframe);
 
-  const doc = iframe.contentWindow.document;
+  const win = iframe.contentWindow;
+  const doc = win.document;
+
   doc.open();
   doc.write(html);
   doc.close();
 
-  // Wait for styles & layout, then print
+  let printed = false;
   iframe.onload = () => {
-    iframe.contentWindow.focus();
-    iframe.contentWindow.print();
+    if (printed) return;
+    printed = true;
 
-    // Cleanup after print dialog opens
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-    }, 1000);
+    win.onafterprint = () => {
+      setTimeout(() => {
+        try { document.body.removeChild(iframe); } catch {}
+      }, 0);
+      win.onafterprint = null;
+    };
+
+    win.focus();
+    win.print();
   };
-})
+});
 }
 
 modal.closeBtn.addEventListener("click", () => modal.close());
