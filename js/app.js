@@ -28,7 +28,7 @@ function el(tag, attrs = {}, children = []) {
 const state = {
   activeCategory: "all",
   searchQuery: "",
-  sortMode: "relevance", 
+  sortMode: "relevance",
 };
 
 function normalize(text) {
@@ -152,7 +152,7 @@ function pickProjectsForFocus(projects, focusKey) {
   if (!cfg.categories) return [...projects];
 
   // Keep only projects that match the selected focus category
-  return projects.filter(p => (p.categories || []).some(c => cfg.categories.includes(c)));
+  return projects.filter((p) => (p.categories || []).some((c) => cfg.categories.includes(c)));
 }
 
 const DOMAIN_LABELS = {
@@ -165,7 +165,7 @@ const DOMAIN_LABELS = {
 function getSelectedPdfDomains() {
   const menu = qs("#pdfDdMenu");
   if (!menu) return ["ds"];
-  const selected = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(x => x.value);
+  const selected = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map((x) => x.value);
   return selected.length ? selected : ["ds"]; // never allow empty selection
 }
 
@@ -174,7 +174,7 @@ function setPdfDomains(domains) {
   if (!menu) return;
 
   const inputs = [...menu.querySelectorAll('input[type="checkbox"]')];
-  inputs.forEach(inp => {
+  inputs.forEach((inp) => {
     inp.checked = domains.includes(inp.value);
   });
 
@@ -191,7 +191,7 @@ function updatePdfDdSummary() {
     return;
   }
 
-  summary.textContent = selected.map(k => DOMAIN_LABELS[k] || k).join(", ");
+  summary.textContent = selected.map((k) => DOMAIN_LABELS[k] || k).join(", ");
 }
 
 
@@ -705,17 +705,16 @@ function renderFilters() {
         type: "button",
         text: label,
         onclick: () => {
-        state.activeCategory = key;
+          state.activeCategory = key;
 
-        // Requirement: switching category automatically uses relevance sort
-        state.sortMode = "relevance";
-        const sortSelect = qs("#projectSort");
-        if (sortSelect) sortSelect.value = "relevance";
+          // Requirement: switching category automatically uses relevance sort
+          state.sortMode = "relevance";
+          const sortSelect = qs("#projectSort");
+          if (sortSelect) sortSelect.value = "relevance";
 
-        renderFilters();
-        renderProjects();
+          renderFilters();
+          renderProjects();
         },
-
       })
     );
   });
@@ -786,9 +785,7 @@ function renderProjects() {
   const grid = qs("#projectsGrid");
   grid.innerHTML = "";
 
-const visible = SITE.projects
-  .filter(projectMatches)
-  .sort(compareProjects);
+  const visible = SITE.projects.filter(projectMatches).sort(compareProjects);
 
   visible.forEach((p) => {
     const thumb = p.image
@@ -801,10 +798,9 @@ const visible = SITE.projects
       : null;
 
     const tagLine = el("div", { class: "card-tags" }, (p.tags || []).map((t) => el("span", { class: "tag", text: t })));
-        const dateLine = p.date
-            ? el("p", { class: "project-date", text: new Date(p.date).toLocaleDateString() })
-            : null;
-
+    const dateLine = p.date
+      ? el("p", { class: "project-date", text: new Date(p.date).toLocaleDateString() })
+      : null;
 
     const viewBtn = el("button", {
       class: "btn-secondary",
@@ -824,11 +820,10 @@ const visible = SITE.projects
       ...(thumb ? [thumb] : []),
       tagLine,
       el("h3", { class: "project-title", text: p.title }),
-      ...(dateLine ? [dateLine] : []), 
+      ...(dateLine ? [dateLine] : []),
       el("p", { class: "project-desc", text: p.blurb }),
       actions,
     ]);
-
 
     grid.appendChild(card);
   });
@@ -863,9 +858,9 @@ function init() {
   });
 
   qs("#projectSort").addEventListener("change", (e) => {
-  state.sortMode = e.target.value;
-  renderProjects();
-});
+    state.sortMode = e.target.value;
+    renderProjects();
+  });
   // PDF dropdown open/close
   const ddBtn = qs("#pdfDdBtn");
   const ddMenu = qs("#pdfDdMenu");
@@ -915,45 +910,46 @@ function init() {
   qs("#pdfDdNone").addEventListener("click", () => setPdfDomains(["ds"])); // "None" becomes a safe default
   updatePdfDdSummary();
 
+  qs("#downloadPdfBtn").addEventListener("click", () => {
+    const domains = getSelectedPdfDomains();
+    const html = buildResumeHtml(domains);
 
-qs("#downloadPdfBtn").addEventListener("click", () => {
-  const domains = getSelectedPdfDomains();
-  const html = buildResumeHtml(domains);
+    // iframe print (your working version)
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
 
-  // iframe print (your working version)
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
+    document.body.appendChild(iframe);
 
-  document.body.appendChild(iframe);
+    const win = iframe.contentWindow;
+    const doc = win.document;
 
-  const win = iframe.contentWindow;
-  const doc = win.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
 
-  doc.open();
-  doc.write(html);
-  doc.close();
+    let printed = false;
+    iframe.onload = () => {
+      if (printed) return;
+      printed = true;
 
-  let printed = false;
-  iframe.onload = () => {
-    if (printed) return;
-    printed = true;
+      win.onafterprint = () => {
+        setTimeout(() => {
+          try {
+            document.body.removeChild(iframe);
+          } catch {}
+        }, 0);
+        win.onafterprint = null;
+      };
 
-    win.onafterprint = () => {
-      setTimeout(() => {
-        try { document.body.removeChild(iframe); } catch {}
-      }, 0);
-      win.onafterprint = null;
+      win.focus();
+      win.print();
     };
-
-    win.focus();
-    win.print();
-  };
-});
+  });
 }
 
 modal.closeBtn.addEventListener("click", () => modal.close());
