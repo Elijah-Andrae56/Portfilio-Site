@@ -1,3 +1,5 @@
+// app.js
+
 import { SITE, CATEGORY_LABELS } from "./data.js";
 
 /** -------------------------
@@ -134,27 +136,6 @@ function formatMonthYear(isoDate) {
   return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short" }).format(d);
 }
 
-function focusConfig(focusKey) {
-  // This controls which projects show in the PDF when a focus is selected.
-  // You can expand this later (e.g., include ds+marketing together, etc.)
-  const map = {
-    all: { title: "Portfolio", categories: null },
-    ds: { title: "Data Science Portfolio", categories: ["ds"] },
-    marketing: { title: "Marketing / Business Portfolio", categories: ["marketing"] },
-    nanofab: { title: "Nanofabrication Portfolio", categories: ["nanofab"] },
-    cs: { title: "Computer Science Portfolio", categories: ["cs"] },
-  };
-  return map[focusKey] || map.all;
-}
-
-function pickProjectsForFocus(projects, focusKey) {
-  const cfg = focusConfig(focusKey);
-  if (!cfg.categories) return [...projects];
-
-  // Keep only projects that match the selected focus category
-  return projects.filter((p) => (p.categories || []).some((c) => cfg.categories.includes(c)));
-}
-
 const DOMAIN_LABELS = {
   ds: "Data Science",
   marketing: "Marketing / Business",
@@ -162,59 +143,44 @@ const DOMAIN_LABELS = {
   cs: "Computer Science",
 };
 
-function getSelectedPdfDomains() {
+// Invisible fallback if user clears everything (used only at download time)
+const PDF_FALLBACK_DOMAINS = ["ds"];
+
+function getVisiblePdfDomains() {
   const menu = qs("#pdfDdMenu");
-  if (!menu) return ["ds"];
-  const selected = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map((x) => x.value);
-  return selected.length ? selected : ["ds"]; // never allow empty selection
+  if (!menu) return [];
+  return [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
 }
 
-function setPdfDomains(domains) {
-  const menu = qs("#pdfDdMenu");
-  if (!menu) return;
-
-  const inputs = [...menu.querySelectorAll('input[type="checkbox"]')];
-  inputs.forEach((inp) => {
-    inp.checked = domains.includes(inp.value);
-  });
-
-  updatePdfDdSummary();
-}
-
-function updatePdfDdSummary() {
-  const selected = getSelectedPdfDomains();
-  const summary = qs("#pdfDdSummary");
-  if (!summary) return;
-
-  if (selected.length === 4) {
-    summary.textContent = "All domains";
-    return;
-  }
-
-  summary.textContent = selected.map((k) => DOMAIN_LABELS[k] || k).join(", ");
+function getEffectivePdfDomains() {
+  const visible = getVisiblePdfDomains();
+  return visible.length ? visible : PDF_FALLBACK_DOMAINS;
 }
 
 
-function buildResumeHtml(focusKey) {
-  const cfg = focusConfig(focusKey);
+ function buildResumeHtml(domains) {
   const person = SITE.person;
 
-  const projects = pickProjectsForFocus(SITE.projects, focusKey)
+  const cfgTitle =
+    Array.isArray(domains) && domains.length
+      ? domains.map((d) => DOMAIN_LABELS[d] || d).join(" + ")
+      : (DOMAIN_LABELS.ds || "Data Science");
+
+  const projects = SITE.projects
+    .filter((p) => (p.categories || []).some((c) => (domains || []).includes(c)))
     .slice()
-    .sort((a, b) => parseDate(b.date) - parseDate(a.date)); // newest first in PDF
+    .sort((a, b) => parseDate(b.date) - parseDate(a.date));
 
   const research = SITE.research || [];
   const skills = SITE.skills || [];
   const education = SITE.education || [];
   const coursework = SITE.coursework || [];
 
-  // Contact lines
   const email = person.contact?.email ? `<div><strong>Email:</strong> ${escapeHtml(person.contact.email)}</div>` : "";
   const phone = person.contact?.phone ? `<div><strong>Phone:</strong> ${escapeHtml(person.contact.phone)}</div>` : "";
   const linkedin = person.contact?.linkedin ? `<div><strong>LinkedIn:</strong> ${escapeHtml(person.contact.linkedin)}</div>` : "";
   const github = person.contact?.github ? `<div><strong>GitHub:</strong> ${escapeHtml(person.contact.github)}</div>` : "";
 
-  // Skills (grouped)
   const skillsHtml = skills.map(cat => `
     <div class="block">
       <div class="block-title">${escapeHtml(cat.title)}</div>
@@ -224,7 +190,6 @@ function buildResumeHtml(focusKey) {
     </div>
   `).join("");
 
-  // Education
   const eduHtml = education.map(e => `
     <div class="block">
       <div class="block-title">${escapeHtml(e.title)}</div>
@@ -233,7 +198,6 @@ function buildResumeHtml(focusKey) {
     </div>
   `).join("");
 
-  // Coursework
   const courseHtml = coursework.map(c => `
     <div class="block">
       <div class="block-title">${escapeHtml(c.title)}</div>
@@ -241,7 +205,6 @@ function buildResumeHtml(focusKey) {
     </div>
   `).join("");
 
-  // Research
   const researchHtml = research.map(r => `
     <div class="item">
       <div class="item-head">
@@ -252,7 +215,6 @@ function buildResumeHtml(focusKey) {
     </div>
   `).join("");
 
-  // Projects
   const projectsHtml = projects.map(p => `
     <div class="item">
       <div class="item-head">
@@ -273,151 +235,47 @@ function buildResumeHtml(focusKey) {
     </div>
   `).join("");
 
-  // Print-optimized CSS is embedded so the PDF view is independent of your site CSS.
   return `
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>${escapeHtml(person.name)} — ${escapeHtml(cfg.title)}</title>
+<title>${escapeHtml(person.name)} — ${escapeHtml(cfgTitle)}</title>
 <style>
-  :root{
-    --text:#111;
-    --muted:#555;
-    --line:#e6e6e6;
-    --accent:#2563eb;
-  }
+  :root{ --text:#111; --muted:#555; --line:#e6e6e6; --accent:#2563eb; }
   *{ box-sizing:border-box; }
-  body{
-    margin:0;
-    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    color:var(--text);
-    line-height:1.25;
-    background:#fff;
-  }
-  .page{
-    padding: 28px 30px;
-    max-width: 1050px;
-    margin: 0 auto;
-  }
-  .header{
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-    gap:16px;
-    border-bottom: 2px solid var(--line);
-    padding-bottom: 12px;
-    margin-bottom: 14px;
-  }
-  .name{
-    font-size: 26px;
-    font-weight: 800;
-    letter-spacing: 0.2px;
-  }
-  .headline{
-    margin-top: 4px;
-    color: var(--muted);
-    font-size: 13.5px;
-  }
-  .focus{
-    color: var(--muted);
-    font-size: 12.5px;
-    text-align:right;
-    white-space:nowrap;
-  }
-  .grid{
-    display:grid;
-    grid-template-columns: 1fr 2fr; /* left 1/3, right 2/3 */
-    gap: 18px;
-  }
-  .left{
-    border-right: 1px solid var(--line);
-    padding-right: 16px;
-  }
-  .section{
-    margin: 0 0 14px 0;
-  }
-  .section-title{
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin: 0 0 8px 0;
-  }
-  .contact{
-    font-size: 12.5px;
-    color: var(--muted);
-  }
-  .block{ margin: 0 0 10px 0; }
-  .block-title{
-    font-weight: 750;
-    font-size: 12.5px;
-    margin-bottom: 6px;
-  }
-  .meta{
-    color: var(--muted);
-    font-size: 12px;
-  }
-  .bullets{
-    margin: 6px 0 0 18px;
-    padding:0;
-    color: var(--muted);
-    font-size: 12.3px;
-  }
-  .bullets li{ margin: 0 0 4px 0; }
+  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--text); line-height:1.25; background:#fff; }
+  .page{ padding:28px 30px; max-width:1050px; margin:0 auto; }
+  .header{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; border-bottom:2px solid var(--line); padding-bottom:12px; margin-bottom:14px; }
+  .name{ font-size:26px; font-weight:800; letter-spacing:.2px; }
+  .headline{ margin-top:4px; color:var(--muted); font-size:13.5px; }
+  .focus{ color:var(--muted); font-size:12.5px; text-align:right; white-space:nowrap; }
+  .grid{ display:grid; grid-template-columns:1fr 2fr; gap:18px; }
+  .left{ border-right:1px solid var(--line); padding-right:16px; }
+  .section{ margin:0 0 14px 0; }
+  .section-title{ font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin:0 0 8px 0; }
+  .contact{ font-size:12.5px; color:var(--muted); }
+  .block{ margin:0 0 10px 0; }
+  .block-title{ font-weight:750; font-size:12.5px; margin-bottom:6px; }
+  .meta{ color:var(--muted); font-size:12px; }
+  .bullets{ margin:6px 0 0 18px; padding:0; color:var(--muted); font-size:12.3px; }
+  .bullets li{ margin:0 0 4px 0; }
   .pill-wrap{ display:flex; flex-wrap:wrap; gap:6px; }
-  .pill{
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 3px 8px;
-    font-size: 11.5px;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-  .pill-soft{
-    border-radius: 7px;
-    white-space: normal;
-  }
-  .right .summary{
-    color: var(--muted);
-    font-size: 12.8px;
-    line-height: 1.35;
-    margin-top: 2px;
-  }
-  .item{
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 10px 12px;
-    margin: 0 0 10px 0;
-  }
-  .item-head{
-    display:flex;
-    justify-content: space-between;
-    gap: 10px;
-    align-items: baseline;
-  }
-  .item-title{
-    font-weight: 800;
-    font-size: 13px;
-  }
-  .desc{
-    margin-top: 6px;
-    color: var(--muted);
-    font-size: 12.3px;
-    line-height: 1.35;
-  }
-  .tools{ margin-top: 8px; display:flex; flex-wrap:wrap; gap:6px; }
-  .links{ margin-top: 8px; font-size: 11.8px; color: var(--muted); }
-  .link{ margin-top: 2px; }
-
-  /* Print tuning */
+  .pill{ border:1px solid var(--line); border-radius:999px; padding:3px 8px; font-size:11.5px; color:var(--muted); white-space:nowrap; }
+  .pill-soft{ border-radius:7px; white-space:normal; }
+  .right .summary{ color:var(--muted); font-size:12.8px; line-height:1.35; margin-top:2px; }
+  .item{ border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin:0 0 10px 0; }
+  .item-head{ display:flex; justify-content:space-between; gap:10px; align-items:baseline; }
+  .item-title{ font-weight:800; font-size:13px; }
+  .desc{ margin-top:6px; color:var(--muted); font-size:12.3px; line-height:1.35; }
+  .tools{ margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
+  .links{ margin-top:8px; font-size:11.8px; color:var(--muted); }
+  .link{ margin-top:2px; }
   @media print{
-    .page{ padding: 0; }
-    .item{ break-inside: avoid; page-break-inside: avoid; }
-    .section{ break-inside: avoid; page-break-inside: avoid; }
-    a{ color: inherit; text-decoration: none; }
+    .page{ padding:0; }
+    .item,.section{ break-inside:avoid; page-break-inside:avoid; }
+    a{ color:inherit; text-decoration:none; }
   }
 </style>
 </head>
@@ -428,19 +286,13 @@ function buildResumeHtml(focusKey) {
         <div class="name">${escapeHtml(person.name)}</div>
         <div class="headline">${escapeHtml(person.headline)}</div>
       </div>
-      <div class="focus">${escapeHtml(cfg.title)}</div>
     </div>
 
     <div class="grid">
       <div class="left">
         <div class="section">
           <div class="section-title">Contact</div>
-          <div class="contact">
-            ${email}
-            ${phone}
-            ${linkedin}
-            ${github}
-          </div>
+          <div class="contact">${email}${phone}${linkedin}${github}</div>
         </div>
 
         <div class="section">
@@ -479,7 +331,7 @@ function buildResumeHtml(focusKey) {
   </div>
 </body>
 </html>
-  `;
+`;
 }
 
 
@@ -861,7 +713,17 @@ function init() {
     state.sortMode = e.target.value;
     renderProjects();
   });
-  // PDF dropdown open/close
+
+  // Modal close
+  modal.closeBtn.addEventListener("click", () => modal.close());
+  modal.backdrop.addEventListener("click", (e) => {
+    if (e.target === modal.backdrop) modal.close();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") modal.close();
+  });
+
+  // PDF dropdown (single button)
   const ddBtn = qs("#pdfDdBtn");
   const ddMenu = qs("#pdfDdMenu");
   const ddWrap = qs("#pdfDropdown");
@@ -883,38 +745,21 @@ function init() {
     else openPdfMenu();
   });
 
-  // Close when clicking outside
-  document.addEventListener("click", (e) => {
-    if (!ddWrap) return;
-    if (!ddWrap.contains(e.target)) closePdfMenu();
-  });
+  ddMenu.addEventListener("change", () => {});
 
-  // Close on Escape
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closePdfMenu();
-  });
 
-  // Update summary when checkboxes change + prevent "none selected"
-  ddMenu.addEventListener("change", (e) => {
-    const selected = [...ddMenu.querySelectorAll('input[type="checkbox"]:checked')];
-    if (selected.length === 0) {
-      // Keep at least one checked
-      const first = ddMenu.querySelector('input[type="checkbox"][value="ds"]') || ddMenu.querySelector('input[type="checkbox"]');
-      if (first) first.checked = true;
-    }
-    updatePdfDdSummary();
-  });
+    qs("#pdfDdClear").addEventListener("click", (e) => {
+    e.preventDefault();
+    ddMenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    });
 
-  // All / None buttons
-  qs("#pdfDdAll").addEventListener("click", () => setPdfDomains(["ds", "marketing", "nanofab", "cs"]));
-  qs("#pdfDdNone").addEventListener("click", () => setPdfDomains(["ds"])); // "None" becomes a safe default
-  updatePdfDdSummary();
 
-  qs("#downloadPdfBtn").addEventListener("click", () => {
-    const domains = getSelectedPdfDomains();
+  qs("#pdfDdDownload").addEventListener("click", (e) => {
+    e.preventDefault();
+
+    const domains = getEffectivePdfDomains();
     const html = buildResumeHtml(domains);
 
-    // iframe print (your working version)
     const iframe = document.createElement("iframe");
     iframe.style.position = "fixed";
     iframe.style.right = "0";
@@ -922,7 +767,6 @@ function init() {
     iframe.style.width = "0";
     iframe.style.height = "0";
     iframe.style.border = "0";
-
     document.body.appendChild(iframe);
 
     const win = iframe.contentWindow;
@@ -939,9 +783,7 @@ function init() {
 
       win.onafterprint = () => {
         setTimeout(() => {
-          try {
-            document.body.removeChild(iframe);
-          } catch {}
+          try { document.body.removeChild(iframe); } catch {}
         }, 0);
         win.onafterprint = null;
       };
@@ -949,13 +791,20 @@ function init() {
       win.focus();
       win.print();
     };
+
+    closePdfMenu();
   });
+
+  document.addEventListener("click", (e) => {
+    if (!ddWrap.contains(e.target)) closePdfMenu();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closePdfMenu();
+  });
+
 }
-
-modal.closeBtn.addEventListener("click", () => modal.close());
-
-
-// small CSS helper for modal headings (kept here to avoid adding extra classes everywhere)
+// small CSS helper for modal headings
 const style = document.createElement("style");
 style.textContent = `
   .modal-section-title { margin-top: 12px; font-weight: 700; color: #111; }

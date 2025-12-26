@@ -1,6 +1,8 @@
+// data.js
+
 export const SITE = {
   person: {
-    name: "Eli Andrae",
+    name: "Elijah Andrae",
     headline: "Data Science | Applied Mathematics | Nanofabrication | Marketing Analytics",
     photo: "images/headshot.jpg",
     photoAlt: "Eli Andrae headshot",
@@ -18,6 +20,7 @@ export const SITE = {
   skills: [
     {
       title: "Statistical & ML Methods",
+      domains: ["ds", "marketing", "nanofab"],
       items: [
         "Regression (SLM/MLM)",
         "Logistic, Ridge/Lasso",
@@ -32,6 +35,7 @@ export const SITE = {
     },
     {
       title: "Programming & Tools",
+      domains: ["cs", "ds", "nanofab"],
       items: [
         "Python (pandas, NumPy, Matplotlib, scikit-learn)",
         "R (tidyverse)",
@@ -46,6 +50,7 @@ export const SITE = {
     },
     {
       title: "Analytics & Experimentation",
+      domains: ["ds", "nanofab", "marketing"],
       items: [
         "Predictive modeling",
         "Train/validation strategy",
@@ -70,6 +75,7 @@ export const SITE = {
     },
     {
       title: "Nanofabrication & Lab Techniques",
+      domains: ["nanofab"],
       items: [
         "ISO cleanroom operations",
         "Substrate prep, solvent handling, UV-ozone cleaning",
@@ -190,7 +196,7 @@ image: "images/microfluidic_TRNG_2.jpg",
       details:
         "Add: constraint list, objective function, infeasibility handling, and how you validated fairness outcomes.",
       image: "images/scheduler_1.png",
-      images: ["images/scheduler_1.png, images/scheduler_2.png, images/scheduler_3.png"],
+      images: ["images/scheduler_1.png", "images/scheduler_2.png", "images/scheduler_3.png"],
       imageAlt: "Wave safety model results plot",
       links: [],
     },
@@ -264,6 +270,7 @@ image: "images/microfluidic_TRNG_2.jpg",
     },
     {
       title: "Learning Assistant — Applied Data Science for Social Justice",
+      domains: ['ds', 'cs', 'nanofab'],
       meta: "University of Oregon | Apr 2025–Jun 2025",
       bullets: [
         "Facilitated lab sessions and office hours; guided students through cleaning, visualization, and analysis of CAHOOTS dispatch logs.",
@@ -273,6 +280,7 @@ image: "images/microfluidic_TRNG_2.jpg",
     },
     {
       title: "Social Media Analytics & Marketing Intern",
+      domains: ["ds", "marketing"],
       meta: "Humes — Waterford, PA",
       bullets: [
         "Increased organic reach by 117% within three weeks by analyzing engagement metrics and optimizing cadence in Meta Business Suite.",
@@ -281,6 +289,7 @@ image: "images/microfluidic_TRNG_2.jpg",
     },
     {
       title: "Mathematics Paper Marker",
+      domains: ["ds", "cs", "nanofab"],
       meta: "Intro to Mathematical Cryptography; Linear Algebra",
       bullets: [
         "Evaluated assignments and provided detailed feedback to support proof-writing, matrix methods, and cryptographic reasoning.",
